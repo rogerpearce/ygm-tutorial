@@ -9,60 +9,32 @@ project(YGM-Tutorial
 set(CMAKE_CXX_STANDARD 20)
 
 include(FetchContent)
+set(FETCHCONTENT_QUIET OFF)
 
-
-#
-#  Threads
-#
-find_package(Threads REQUIRED)
-
+set(BOOST_URL 
+    "https://github.com/boostorg/boost/releases/download/boost-1.87.0/boost-1.87.0-cmake.tar.gz" 
+    CACHE STRING "URL to fetch Boost tarball")
 
 #
 # Boost
-include(setup_boost)
-prepare_fetchcontent_boost()
-set(FETCHCONTENT_QUIET FALSE)
 FetchContent_Declare(
-        Boost
-        GIT_REPOSITORY https://github.com/boostorg/boost.git
-        GIT_TAG boost-1.78.0
-        GIT_SUBMODULES ${BOOST_REQD_SUBMODULES}
-        GIT_PROGRESS TRUE
-        CONFIGURE_COMMAND ""  # tell CMake it's not a cmake project
+    Boost 
+    URL ${BOOST_URL}
 )
+set(BOOST_INCLUDE_LIBRARIES json)
 FetchContent_MakeAvailable(Boost)
-get_boost_include_dirs()
 
-# #
-# #  cereal
-# find_package(cereal QUIET)
-# if (NOT cereal_FOUND)
-#     set(JUST_INSTALL_CEREAL TRUE)
-#     FetchContent_Declare(cereal
-#             GIT_REPOSITORY https://github.com/USCiLab/cereal.git
-#             GIT_TAG master
-#             )
-#     FetchContent_MakeAvailable(cereal)
-# endif ()
-
-
-#
-#  MPI
-find_package(MPI)
 
 #
 #  YGM
-if (MPI_CXX_FOUND)
-    find_package(YGM QUIET)
-    if (NOT YGM_FOUND)
-        set(JUST_INSTALL_YGM TRUE)
-        FetchContent_Declare(YGM
-            GIT_REPOSITORY https://github.com/llnl/ygm.git
-            GIT_TAG v0.7-dev
-                )
-        FetchContent_MakeAvailable(YGM)
-    endif ()
-endif ()
+set(YGM_REQUIRE_PARQUET ON)
+set(YGM_INSTALL_PARQUET ON)
+FetchContent_Declare(YGM
+    GIT_REPOSITORY https://github.com/rogerpearce/ygm.git
+    GIT_TAG feature/cmake_updates
+        )
+FetchContent_MakeAvailable(YGM)
+
 
 
 #
@@ -95,14 +67,6 @@ endfunction()
 # Function for setting up a target that uses YGM
 #
 function(setup_ygm_target exe_name)
-    if (NOT MPI_CXX_FOUND)
-        message(WARNING "YGM requires MPI; skip building ${exe_name}.")
-        return()
-    endif ()
-
-    target_link_libraries(${exe_name} PRIVATE MPI::MPI_CXX)
-    target_link_libraries(${exe_name} PRIVATE cereal)
-    target_link_libraries(${exe_name} PRIVATE Threads::Threads)
     if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Linux")
         target_link_libraries(${exe_name} PRIVATE rt)
     endif ()
